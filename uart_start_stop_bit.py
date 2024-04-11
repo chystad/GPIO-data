@@ -1,16 +1,16 @@
 # This script will serve as a way to test if the start and stop bits are configured correctly 
 # using a repeating signal and oscilloscope probing
 
+# Fra Todo:
+#   Skriv kode som gjentakende sender '11110000'. Da kan vi bruke oscilloskop
+#   for å sjekke om det virkelig sendes en start-bit skaper en negativ flanke
+#   på starten av datarammen, og en sluttbit som skaper en positiv flanke på slutten
+#   av transmissjonen. Hvis dette er tilfellet -> slett 'format_cmd_and_send'
+
 import serial
-import threading
-from time import sleep 
-from libdef_uart import uart_wakeup_cmd
-from libdef_uart import format_character_to_send
-from libdef_uart import send_cmd
-from libdef_uart import format_cmd_and_send
 from libdef_uart import UART_COMM_OPT
 
-serial_port = '/dev/ttyUSB0'
+serial_port = UART_COMM_OPT[0]
 baud_rate = UART_COMM_OPT[1]
 wakeup_time = UART_COMM_OPT[5]
 timeout = UART_COMM_OPT[4]
