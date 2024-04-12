@@ -1,5 +1,4 @@
 import os
-import serial
 from time import sleep
 
 
@@ -21,8 +20,10 @@ from time import sleep
 #   Endre funksjonen uart_wakeup_cmd() til å sende signal fra RX-pinnen 
 #   (Dette må endres for å sende korrekt wakeup signal til magnetometeret)
 #
+#   ------------------GJORT!------------------
 #   Endre uart.py til å inkludere threading slik at scriptet kan høre etter data inputs 
 #   mens den venter på den neste kommandoen fra brukeren.
+#   ------------------------------------------
 
 
 
@@ -35,7 +36,7 @@ from time import sleep
 #   timeout,
 #   wakeup_time
 # ]
-UART_COMM_OPT = ['TCU0', 9600, 1, 'none', 1, 0.1]
+UART_COMM_OPT = ['/dev/ttyTCU0', 9600, 1, 'none', 1, 0.1]
 
 
 # Brief: No argument: Lists all available ports. Argument: Check if specified port is available
@@ -71,7 +72,8 @@ def uart_wakeup_cmd(serial, wakeup_time):
     sleep(wakeup_time)
     print('The magnetometer has woken up')
 
-def cmd_str_to_sendable_bin_sequence(cmd_string):
+# Brief: Sends the command as a binary sequence with LSB first (standard)
+def cmd_bin_sequence(cmd_string):
     # cmd_hex_arr is only for debugging purposes
     #cmd_hex_arr = []
     hex_str= ''.join(format(ord(c), '02x') for c in cmd_string)
@@ -80,70 +82,31 @@ def cmd_str_to_sendable_bin_sequence(cmd_string):
     bin_sequence = bytes.fromhex(hex_str)
     return bin_sequence
 
-# Brief: Converts an input character string into the corresponsing 8-bit ASCII representation, and returns a 
-# 10-bit value with the correct start and stop bit to enable communication with the magnetometer
-def format_character_to_send(character_string):
-    bin_representation = format(ord(character_string), '08b')
-    # Add a 0 at the beginning and a 1 at the end (start and stop bit)
-    custom_bin = '0' + bin_representation + '1'
-    return custom_bin
+# Brief: Sends the command as a binary sequence with MSH first
+def mirrored_cmd_bin_sequence(cmd_string):
+    result_hex = []
 
-# Brief: Sends a command string in 10-bit packets over serial. 
-def send_cmd(serial, cmd_string):
-    cmd_string_arr = list(cmd_string)
-    for i in range(0, len(cmd_string_arr)):
-        bit_string_to_send = format_character_to_send(cmd_string_arr[i])
-        print(bit_string_to_send)
-        try:
-            serial.write(bit_string_to_send)
-        except:
-            print(f'Failed to send bit string {bit_string_to_send}')
-            print('INFO: Aborting command transmission')
-            break
-    print(f'Command {cmd_string} successfully transmitted')
-    return 0
-
-# Brief: Converts a cmd string into a hexadecimal string that accounts for
-# the neccessary start and stop bit. Then the command is sent to the magnetometer
-def format_cmd_and_send(serial, cmd_string):
-    cmd_bit_arr = []
-    
-    # Converts each character into its 8-bit ascii value, and adds the appropriate 
-    # start and stop bit to enable communication with the magnetometer
     for char in cmd_string:
-        binary_string = format(ord(char), '08b')
-        modified_bits = [0] + [int(bit) for bit in binary_string] + [1]
-        # Append modified bits to the bit array
-        cmd_bit_arr.extend(modified_bits)
+        # Convert character to its ASCII integer
+        ascii_value = ord(char)
+        
+        # Convert the ASCII value to an 8-bit binary string
+        bin_str = '{:08b}'.format(ascii_value)
+        
+        # Reverse the binary string
+        reversed_bin_str = bin_str[::-1]
+        
+        # Convert the reversed binary string back to an integer
+        reversed_num = int(reversed_bin_str, 2)
+        
+        # Convert the integer back to hexadecimal, removing the '0x' prefix
+        reversed_hex = '{:02x}'.format(reversed_num)
+        
+        # Append the result to the list
+        result_hex.append(reversed_hex)
 
-    # Extend the bit array with 1's if its length is not divisible by 8
-    while len(cmd_bit_arr) % 8 != 0:
-        cmd_bit_arr.append(1)
-    
-    # Convert each group of 8 bits to a hexadecimal character
-    cmd_hex_arr = []
-    for i in range(0, len(cmd_bit_arr), 8):
-        # Join 8 bits to form a binary string, then convert to an integer, and finally to a hexadecimal string
-        hex_char = format(int(''.join(str(bit) for bit in cmd_bit_arr[i:i+8]), 2), '02x')
-        cmd_hex_arr.append(hex_char)
-    print(cmd_hex_arr)
+    # Join all hexadecimal numbers into a single string
+    hex_str = ''.join(result_hex)
 
-    # NB! TRENGER BARE EN AV DE TO METODENE UNDER. BESTEM ÈN
-    """
-    cmd_byte_sequence = ''.join(['\\x' + hex_byte for hex_byte in cmd_hex_arr])
-    print(cmd_byte_sequence)
-    """
-    cmd_hex_str = ''.join(cmd_hex_arr)
-    print(cmd_hex_str)
-    binary_sequence = bytes.fromhex(cmd_hex_str)
-    print(binary_sequence)
-
-
-    try:
-        # Will give an error if the binary sequence contains a hex number > 7F
-        serial.write(binary_sequence)
-    except:
-        print(f'Failed to send bit string {binary_sequence}')
-        print('INFO: Aborting command transmission')
-    print(f'Command {cmd_string} successfully transmitted')
-
+    bin_sequence = bytes.fromhex(hex_str)
+    return bin_sequence

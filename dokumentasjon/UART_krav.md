@@ -18,13 +18,13 @@ Hvis vi finner ut av at sluttbit-en fungerer som den skal, vil det være mulig �
 2. Riktig spenningsnivåer på de logiske nivåene på RX/TX pinnene. Disse kan ta spenningsverdier i intervallet [GND-0.5V. VCCIN+0.5V]
 
 # Oppfylt?
-Kanskje (trolig ja, men må verifisere)
+Ja. 
 
 # Nåverende implementasjon
-Dette har ikke bltt testet
+Har blitt testet. Det blir sendt et signal som ligger mellom 0V og 3.3V
 
 # Fremtidig implementasjon
-Må testes
+Ingenting
 
 
 3. Riktig kommunikasjonskonfigurasjon. Riktig baudrate, stop/startbit, polaritet og port
