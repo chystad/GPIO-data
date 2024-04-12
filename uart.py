@@ -6,25 +6,33 @@ from libdef_uart import cmd_bin_sequence
 from libdef_uart import mirrored_cmd_bin_sequence
 from libdef_uart import UART_COMM_OPT
 
-serial_port = UART_COMM_OPT[0]
+# UART_COMM_OPT[0]
+serial_port = '/dev/ttyUSB0'
 baud_rate = UART_COMM_OPT[1]
 wakeup_time = UART_COMM_OPT[5]
 timeout = UART_COMM_OPT[4]
 
+"""
 # Function to continuously listen for incoming data on the serial port
 def listen_for_incoming_data(ser):
     while not exit_flag.is_set():  # Continue until told to stop
         if ser.in_waiting > 0:
             line = ser.readline(ser.in_waiting).decode('UTF-8').rstrip()
             print()
-            print(line)
+            print(f'Received: {line}')
 """
+            
 def listen_for_incoming_data(ser):
     while not exit_flag.is_set():  # Continue until told to stop
         if ser.in_waiting > 0:
-            line = ser.readline().decode('UTF-8').rstrip()  # Read lines based on termination characters
-            print(line)
-"""
+            try:
+                line = ser.readline().decode('UTF-8').rstrip()  # Read lines based on termination characters
+                print(f'Received: {line}')
+            except: 
+                line = ser.readline()
+                print(f'Received line exceeding the UTF-8 decoding range: {line}')
+
+
             
 try:
     with serial.Serial(
@@ -47,7 +55,7 @@ try:
 
         while True:
             print()
-            cmd_to_send = input('Command to send to the magnetometer: ')
+            cmd_to_send = input()
             if cmd_to_send.lower() == 'exit':
                 exit_flag.set()  # Tell the listening thread to stop
                 listen_thread.join()  # Wait for the listening thread to finish
